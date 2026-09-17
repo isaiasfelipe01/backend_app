@@ -1,0 +1,18 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.idea/
+.gradle/
+local.properties
+android/.kotlin/
+android/app/build/
+android/build/
+*.jks
+*.keystore
+
+# O repositório publicado é exclusivo do backend/Vercel.
+android/
+pluggy/
+MeuFinancas-debug.apk

@@ -1,0 +1,12 @@
+# Arquitetura
+
+O Android usa Compose/Material 3, Navigation Compose, ViewModel/StateFlow, corrotinas, Retrofit/Gson, OkHttp, Koin, Coil e WorkManager. `FinanceViewModel` dispara resumo, transações, trend, cartões, contas, investimentos, metas e planejamento em paralelo. Um contador de geração descarta respostas de meses antigos; a busca usa `debounce(300)`. A API URL e o UUID pessoal entram por `BuildConfig`.
+
+O backend expõe FastAPI com Pydantic e um repositório Supabase. O `PluggyClient` autentica no servidor e segue `cursor` até acabar para transações; a primeira sincronização registra todas as contas retornadas, incluindo BANK, CREDIT, PAYMENT, INVESTMENT e outros tipos normalizados. O endpoint `/investments` e o endpoint paginado de transações de investimentos alimentam posições, ativos e histórico. O cliente nunca recebe Client Secret.
+
+Ao registrar um item vindo do Pluggy Connect, o backend salva `pluggy_connections` e inicia `pluggy_sync_runs`. Uma única execução ativa por usuário é garantida no banco por índice parcial. Cada instituição é isolada: erro em uma conexão não interrompe as demais. UPSERT transacional por usuário, conta e `pluggy_transaction_id` evita duplicatas e preserva `user_edited_description`/`user_edited_category`. Saldos, limites, faturas e payloads originais são reconciliados sem apagar histórico.
+
+`PluggyTransactionNormalizer` prioriza `type`, `operationType`, `paymentData`, `creditCardMetadata`, tipo da conta e merchant. Cartão positivo pode ser compra; `CREDIT_CARD_PURCHASE` é consumo, `CREDIT_CARD_REFUND` reduz consumo, pagamento de fatura é excluído dos indicadores. `InternalTransferMatcher` só fecha duas contas do mesmo usuário com natureza estruturada de transferência, contas distintas, valor igual, data em janela de dois dias e evidência de contraparte/moeda compatível. Os dois lados permanecem visíveis e recebem o mesmo UUID de grupo, sem receita, despesa ou meta. O reconciliador de cartão aplica regra equivalente à saída bancária e contrapartida no cartão.
+
+O patrimônio usa saldo bancário + posições de investimento − faturas correntes; limite de cartão não é ativo. Webhooks são gravados por `event_id` único e podem iniciar a mesma sincronização idempotente. Desconectar item remove por cascade apenas os dados vinculados à conexão. Tabelas e funções são protegidas por RLS sem políticas públicas; o backend usa `service_role` em ambiente privado.
+

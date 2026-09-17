@@ -1,0 +1,1 @@
+"""MeuFinancas backend package."""
